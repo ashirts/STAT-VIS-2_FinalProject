@@ -38,6 +38,8 @@ color_num <- function(input_table, col_num){
 }
 
 
+
+
 # Plot the disasters.
 plot_disasters <- function(input_table, min_num = 0, col_num = 11){
   # input_table = the input table
@@ -52,8 +54,9 @@ plot_disasters <- function(input_table, min_num = 0, col_num = 11){
                  values_to = "Disasters")
   print(dim(table(final_table$ISO3)))
   
-  ggplot(final_table, aes(x = Year, y = Disasters, color = ISO3)) +
+  ggplot(final_table, aes(x = Year, y = Disasters, color = ISO3, group=ISO3)) +
     geom_point() +
+    geom_line() +
     facet_wrap(~ ISO3) +
     labs(title = paste("All countries which had more than", min_num,
                        deparse(substitute(input_table)),"in a single year"),
@@ -84,8 +87,37 @@ disaster_counts <- tibble(disaster_names,
 
 disaster_counts 
 plot_disasters(Floods,5, 12)
+plot_disasters(Droughts, 1, 4)
+plot_disasters(HotTemps, 2, 7)
+plot_disasters(Floods, 8, 8)
 
 
+FaC2 <- FaC %>%
+  filter(Country %in% c("Africa", "Americas", "Asia", "Euro Area", "Oceania")) %>%
+  select(-c(Country, ISO2, Source, CTS_Code, CTS_Name, CTS_Full_Descriptor)) %>%
+  filter(Indicator %in% c("Carbon stocks in forests", "Forest area"))
+
+Forest.long <- FaC2 %>%
+  filter(Indicator %in% c("Forest area")) %>%
+  pivot_longer(cols = starts_with("F"),
+               names_to = "Year", values_to = "ForestArea") %>%
+  mutate(Year = sub("^F", "", Year))
+
+Carbon.long <- FaC2 %>%
+  filter(Indicator %in% c("Carbon stocks in forests")) %>%
+  pivot_longer(cols = starts_with("F"),
+               names_to = "Year", values_to = "Carbon") %>%
+  mutate(Year = sub("^F", "", Year))
+
+ggplot(data = Forest.long, 
+       aes(x = Year, y = ForestArea, col=ISO3, group = ISO3)) +
+  geom_line(size = 2) +
+  labs(title = "The amount of Forest Area over time by continent")
+
+ggplot(data = Carbon.long,
+       aes(x = Year, y = Carbon, col=ISO3, group=ISO3)) +
+  geom_line(size = 2) +
+  labs(title = "The amount of Carbon over time by continent")
 
 
 
