@@ -1,14 +1,31 @@
 library(tidyverse)
 library(psych)
+library(RColorBrewer)
+library(countrycode)
+library(gridExtra)
+library(patchwork)
+library(rnaturalearth)
+library(rnaturalearthdata)
+library(sf)
 
-FaC <- read_csv("forest_and_carbon.csv")
-ASTC <- read_csv("Annual_Surface_temperature_change.csv")
+FaC <- rcountrycodeFaC <- read_csv("forest_and_carbon.csv")
 NDF <- read_csv("Climate-related_Disasters_Frequency.csv")
 
 NDF2 <- NDF %>%
   mutate(Indicator = sub(".*: ", "", Indicator)) %>% # Clean Indicator
   select(-c(ISO2, Country, ObjectId, Unit, Source, CTS_Code, CTS_Name, CTS_Full_Descriptor)) %>% # Remove unneeded columns
   mutate(across(everything(), replace_na, 0)) # Replace NAs with 0
+
+NDF3 <- NDF %>%
+  mutate(Indicator = sub(".*: ", "", Indicator)) %>%
+  select(-c(ISO2, ObjectId, Unit, Source, CTS_Code, CTS_Name, CTS_Full_Descriptor)) %>% # Remove unneeded columns
+  mutate(across(everything(), replace_na, 0)) %>%
+  mutate(continent = countrycode(Country, "country.name.en", "continent")
+         ) %>%
+  rename_with(~ gsub("^F", "", .x), starts_with("F")) %>% # Replace NAs with 0
+  select(continent, everything()) %>%
+  drop_na()
+  
 
 
 # Split disaster types into their own datasets
@@ -19,6 +36,11 @@ disasters <- NDF2 %>%
   select(-Indicator) %>%
   split(NDF2$Indicator)
 
+disasters2 <- NDF3 %>%
+  filter(Indicator %in% disaster_types) %>%
+  select(-Indicator) %>%
+  split(NDF3$Indicator)
+
 Droughts <- disasters[["Drought"]]
 HotTemps <- disasters[["Extreme temperature"]]
 Floods <- disasters[["Flood"]]
@@ -27,6 +49,31 @@ Storms <- disasters[["Storm"]]
 TotalDisasters <- disasters[["TOTAL"]]
 Wildfires <- disasters[["Wildfire"]]
 
+long_disasters <- function(input_table) {
+  input_table %>%
+  pivot_longer(
+    cols = `1980`:`2022`,  # selects columns like "1990", "1991", etc.
+    names_to = "year",
+    values_to = "disasters"
+  ) %>%
+  mutate(year = as.integer(year)) %>%
+  group_by(continent, year) %>%
+  summarize(total_disasters = sum(disasters, na.rm = TRUE), .groups = "drop")
+}
+
+
+
+Droughts2 <- long_disasters(disasters2[["Drought"]])
+HotTemps2 <- long_disasters(disasters2[["Extreme temperature"]])
+Floods2 <- long_disasters(disasters2[["Flood"]])
+Landslides2 <- long_disasters(disasters2[["Landslide"]])
+Storms2 <- long_disasters(disasters2[["Storm"]])
+TotalDisasters2 <- long_disasters(disasters2[["TOTAL"]])
+Wildfires2 <- long_disasters(disasters2[["Wildfire"]])
+
+
+
+
 disaster_names <- c("Droughts", "HotTemps", "Floods", "Landslides", "Storms",
                     "TotalDisasters", "Wildfires")
 
@@ -34,7 +81,7 @@ disaster_names <- c("Droughts", "HotTemps", "Floods", "Landslides", "Storms",
 color_num <- function(input_table, col_num){
   # Input_table = the input table
   # col_num = The number of colors you want in the graphs.
-  rep(brewer.pal(col_num, "Paired"), length.out = dim(table(input_table$ISO3)))
+  rep(brewer.pal(col_num, "Paired"), length.out = dim(table(input_table[,1])))
 }
 
 
@@ -69,6 +116,48 @@ plot_disasters <- function(input_table, min_num = 0, col_num = 11){
           title = element_text(size = 10))
 }
 
+plot_continents <- function(input_table, legend.pos = "right", 
+                            title = element_text(size = 10),
+                            title_text = paste("The number of",
+                                               sub("2$", "", deparse(substitute(input_table))),
+                                               "per year,",min(input_table$year), "-", 
+                                               max(input_table$year))){
+  ggplot(input_table, aes(x = year, y = total_disasters, 
+                          color = continent,
+                          group = continent)) +
+    geom_line(size = 1) +
+    labs(title = title_text,
+         y = ""
+    ) +
+    theme_minimal() +
+    scale_color_brewer(palette = "RdYlBu") +
+    theme(legend.position = legend.pos,
+          legend.title = element_blank(),
+          legend.background = element_rect(fill = "darkgrey"),
+          axis.text.x = element_blank(), 
+          title = title,
+          panel.background = element_rect(fill = "darkgrey"))
+    
+}
+
+p1 <- plot_continents(Droughts2, "none", title_text = "Droughts")
+p2 <- plot_continents(HotTemps2, "none", title_text = "Hot Temps")
+p3 <- plot_continents(Floods2, "none", title_text = "Floods")
+p4 <- plot_continents(Landslides2, "none", title_text = "Landslides")
+p5 <- plot_continents(Storms2, "none", title_text = "Storms")
+p7 <- plot_continents(TotalDisasters2, "none", title_text = "Totals")
+p6 <- plot_continents(Wildfires2, "none", title_text = "Wildfires")
+
+text_box <- ggplot() +
+  theme_void() +
+  annotate("text", x = 0.5, y = 0.5, label = "Droughts\nHot Temps\nFloods\nLandslides\nStorms\nWildfires\nTotals", size = 3, hjust = 0.5) +
+  xlim(0,1) + ylim(0,1)
+
+
+
+p1 + p2 + p3 + p4 + p5 + p6 + p7 + guide_area() +
+  plot_layout(guides = "collect", heights = c(2, 2)) &
+  theme(legend.position = "right")
 
 # Disaster_counts is the number of graphs you have where one country has more
 # than that number for that many countries. (e.g. 188 countries where they had
@@ -90,6 +179,47 @@ plot_disasters(Floods,5, 12)
 plot_disasters(Droughts, 1, 4)
 plot_disasters(HotTemps, 2, 7)
 plot_disasters(Floods, 8, 8)
+
+plot_decade <- function(data){
+  ggplot(data, aes(x = Decade, y = Average,
+                   color = continent,
+                   group = continent)) +
+    geom_line(size = 1) +
+    labs(title = paste("Average", sub("2$", "", str_extract(deparse(substitute(data)), 
+                                              "(?<=\\().*?(?=\\))"))),
+         y = ""
+    ) +
+    theme_minimal() +
+    scale_color_brewer(palette = "RdYlBu") +
+    theme(legend.position = "none",
+          legend.title = element_blank(),
+          legend.background = element_rect(fill = "darkgrey"),
+          axis.text.x = element_blank(), 
+          title = element_text(size = 10),
+          panel.background = element_rect(fill = "darkgrey"))
+    
+}
+
+
+collapse_years <- function(data){
+  data %>%
+    mutate(Decade = as.numeric(paste0(floor(year / 10) * 10))) %>%
+    group_by(continent, Decade) %>%
+    summarise(Average = mean(total_disasters, na.rm = TRUE), .groups = "drop")
+}
+
+collapse_years(Droughts2)
+q1 <- plot_decade(collapse_years(Droughts2))
+q2 <- plot_decade(collapse_years(HotTemps2))
+q3 <- plot_decade(collapse_years(Floods2))
+q4 <- plot_decade(collapse_years(Landslides2))
+q5 <- plot_decade(collapse_years(Storms2))
+q6 <- plot_decade(collapse_years(Wildfires2))
+q7 <- plot_decade(collapse_years(TotalDisasters2))
+
+q1 + q2 + q3 + q4 + q5 + q6 + q7 + guide_area() +
+  plot_layout(guides = "collect", heights = c(2, 2)) &
+  theme(legend.position = "right")
 
 
 FaC2 <- FaC %>%
