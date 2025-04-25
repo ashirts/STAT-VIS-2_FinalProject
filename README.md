@@ -15,7 +15,11 @@ We explore global trends in temperature change, sea level rise, climate-related 
   Contains the raw datasets used for analysis.
   
 - **`presentation`**  
-Contains all the files that were used for the presentation, including the .tex and .pdf files. 
+Contains all the files that were used for the presentation, including the .tex and .pdf files.
+
+- **`paper`**  
+Contains all the files that were used for the paper including the .tex, .pdf, and .bib files.
+
 ## About the Project
 
 In this project, we analyzed four major indicators of climate change:
