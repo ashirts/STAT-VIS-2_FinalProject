@@ -1,4 +1,4 @@
-    # Climate Change Data Analysis Project
+    # STAT VIS II Final Project
 
 This repository contains the materials for our project **"Examining the Effects of Climate Change Across the Globe"**.  
 We explore global trends in temperature change, sea level rise, climate-related disasters, and deforestation using real-world datasets and a variety of data visualization techniques.
