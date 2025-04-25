@@ -430,8 +430,9 @@ pct2 <- ggplot(data = map_info2) +
   theme(legend.position = "right")
 pct2
   
-
+png("forest_pct.png", width = 800, height = 700)
 grid.arrange(pct, pct2)
+dev.off()
 
 animate(p, width = 1000, height = 500, fps = 4)
 
