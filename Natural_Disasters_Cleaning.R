@@ -8,16 +8,20 @@ library(rnaturalearth)
 library(rnaturalearthdata)
 library(sf)
 
-FaC <- rcountrycodeFaC <- read_csv("forest_and_carbon.csv")
-NDF <- read_csv("Climate-related_Disasters_Frequency.csv")
+FaC <- rcountrycodeFaC <- read_csv("data/forest_carbon.csv")
+NDF <- read_csv("data/disasters.csv")
 
 NDF2 <- NDF %>%
-  mutate(Indicator = sub(".*: ", "", Indicator)) %>% # Clean Indicator
+  mutate(Indicator = sub(".*: ", "", Indicator)) %>% # Clean Indicator 
+  rename(CTS_Code = `CTS Code`, CTS_Name = `CTS Name`, 
+         CTS_Full_Descriptor = `CTS Full Descriptor`) |>
   select(-c(ISO2, Country, ObjectId, Unit, Source, CTS_Code, CTS_Name, CTS_Full_Descriptor)) %>% # Remove unneeded columns
   mutate(across(everything(), replace_na, 0)) # Replace NAs with 0
 
 NDF3 <- NDF %>%
   mutate(Indicator = sub(".*: ", "", Indicator)) %>%
+  rename(CTS_Code = `CTS Code`, CTS_Name = `CTS Name`, 
+         CTS_Full_Descriptor = `CTS Full Descriptor`) |>
   select(-c(ISO2, ObjectId, Unit, Source, CTS_Code, CTS_Name, CTS_Full_Descriptor)) %>% # Remove unneeded columns
   mutate(across(everything(), replace_na, 0)) %>%
   mutate(continent = countrycode(Country, "country.name.en", "continent")

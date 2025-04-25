@@ -3,10 +3,10 @@ library(dplyr)
 library(tidyr)
 
 
-temperature <- read_csv("C:\\University\\Stat 5560\\Final Project\\temperature.csv")
-sea_levels <- read_csv("C:\\University\\Stat 5560\\Final Project\\sea_levels.csv")
-forest_carbon <- read_csv("C:\\University\\Stat 5560\\Final Project\\forest_carbon.csv")
-disasters <- read_csv("C:\\University\\Stat 5560\\Final Project\\disasters.csv")
+temperature <- read_csv("data/temperature.csv")
+sea_levels <- read_csv("data/sea_levels.csv")
+forest_carbon <- read_csv("data/forest_carbon.csv")
+disasters <- read_csv("data/disasters.csv")
 
 
 # clean the temp data
@@ -28,11 +28,34 @@ sum(complete.cases(sea_levels))
 nrow(sea_levels) - sum(complete.cases(sea_levels))
 
 # puts temp data in long form
-temperature_long <- temperature %>%
-  pivot_longer(
-    cols = `1961`:`2023`,
-    names_to = "Year",
-    values_to = "Temperature_Change_Celsius"
-  ) %>%
-  mutate(Year = as.integer(Year)) %>%
-  drop_na(Temperature_Change_Celsius)
+sea_long <- sea_levels %>%
+  mutate(measured_year = as.numeric(str_extract(Date, "[[:digit:]]{4}$")))
+ 
+
+
+sea_long %>%
+  mutate(Measure = fct_rev(factor(Measure, levels = sort(unique(Measure))))) %>%
+  ggplot(aes(x = measured_year, y = Measure, fill = Value)) +
+  geom_tile() +
+  scale_fill_viridis_c(option = "C") +
+  labs(title = "Sea Level by Region and Year",
+       x = "Year", y = "Region", fill = "Sea Level Change") +
+  theme_minimal() +
+  theme(axis.text.y = element_text(size = 8), axis.text.x = element_text(size = 8))
+
+
+sea_long %>% group_by(measured_year, Measure) %>%
+  summarize(avg_level = mean(Value)) %>%
+
+ggplot( aes(x = measured_year, y = avg_level, color = Measure)) +
+  geom_point(size = 1.5) +
+  #coord_cartesian(ylim = c(global_min, global_max)) +
+  #ylim(global_min, global_max) +
+  facet_wrap(~Measure, scales = "fixed") +
+  labs(title = paste("Sea Level change by Sea"),
+       y = "Sea Level Change", x = "Year") +
+  theme_minimal() +
+  theme(legend.position = "none",
+        strip.text = element_text(size = 7),
+        plot.title = element_text(face = "bold", size = 14), 
+        axis.text.x = element_text(angle = 45, size = 5))

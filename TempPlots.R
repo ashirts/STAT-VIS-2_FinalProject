@@ -7,11 +7,12 @@ library(countrycode)
 library(rnaturalearth)
 library(sf)
 library(gganimate)
+library(gifski)
 
-temperature_unclean <- read_csv("C:\\University\\Stat 5560\\Final Project\\temperature.csv")
+temperature_unclean <- read_csv("data/temperature.csv")
 
 # clean the temp data
-temperature <- temperature %>%
+temperature <- temperature_unclean %>%
   dplyr::select(-ISO2, -Indicator, -Unit, -Source, -`CTS Code`,
                 -`CTS Name`,-`CTS Full Descriptor`)
 
@@ -98,7 +99,7 @@ region_lists <- list(
   Oceania = oceania
 )
 
-p <- ggplot(df, aes(x = Year, y = Temperature_Change_Celsius, color = Country)) +
+p <- ggplot(data = temperature_long, aes(x = Year, y = Temperature_Change_Celsius, color = Country)) +
   geom_line(linewidth = 0.7) +
   ylim(global_min, global_max) +
   facet_wrap(~Country, scales = "fixed") +
@@ -155,6 +156,5 @@ p <- ggplot(map_data) +
   transition_states(Decade, transition_length = 2, state_length = 1) +
   ease_aes("linear")
 
-animate(p, width = 1000, height = 500, fps = 4)
-
-anim_save("temperature_change_by_decade.gif", animation = last_animation())
+anim <- animate(p, width = 1000, height = 500, fps = 4, renderer = gifski_renderer())
+anim_save("temperature_change_by_decade.gif", animation = anim)

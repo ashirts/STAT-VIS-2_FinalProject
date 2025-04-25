@@ -9,7 +9,7 @@ library(sf)
 library(gganimate)
 library(zoo)
 
-temperature <- read_csv("C:\\University\\Stat 5560\\Final Project\\temperature.csv") %>%
+temperature <- read_csv("data/temperature.csv") %>%
   select(-ISO2, -Indicator, -Unit, -Source, -`CTS Code`, -`CTS Name`, -`CTS Full Descriptor`)
 
 temperature <- temperature %>%
@@ -207,6 +207,7 @@ p <- ggplot(map_data) +
   transition_states(Decade, transition_length = 2, state_length = 1) +
   ease_aes("linear")
 
-animate(p, width = 1000, height = 500, fps = 4)
-anim_save("temperature_change_by_decade.gif", animation = last_animation())
+anim <- animate(p, width = 1000, height = 500, fps = 4, renderer = gifski_renderer())
+anim_save("temperature_change_by_decade.gif", animation = anim)
+
 

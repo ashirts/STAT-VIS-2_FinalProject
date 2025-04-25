@@ -9,7 +9,7 @@ library(rnaturalearthdata)
 library(sf)
 library(gganimate)
 
-FaC <- rcountrycodeFaC <- read_csv("forest_and_carbon.csv")
+FaC <- rcountrycodeFaC <- read_csv("data/forest_carbon.csv")
 
 FaC3 <- FaC %>%
   filter(!Country %in% c("Africa", "Americas", "Asia", "Euro Area", "Oceania")) %>%
